@@ -2,7 +2,7 @@ from datetime import datetime
 import pandas as pd
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.google.cloud.transfers.gcs_to_local import GCSToLocalOperator
+from airflow.providers.google.cloud.transfers.gcs_to_local import GCSToLocalFilesystemOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.hooks.postgres_hook import PostgresHook
 
@@ -45,7 +45,7 @@ def insert_data_from_csv(**kwargs):
     connection.commit()
 
 # Task to download CSV file from GCS
-download_csv_task = GCSToLocalOperator(
+download_csv_task = GCSToLocalFilesystemOperator(
     task_id='download_csv_file',
     bucket='nth-20241216-0922',
     object_name='/people-100.csv',
