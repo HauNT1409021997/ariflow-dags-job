@@ -27,7 +27,7 @@ def create_table_from_csv(**kwargs):
     columns = ", ".join([f"{col} TEXT" for col in df.columns])
     create_table_query = f"CREATE TABLE IF NOT EXISTS my_table ({columns});"
 
-    postgres_hook = PostgresHook(postgres_conn_id='your_postgres_connection')
+    postgres_hook = PostgresHook(postgres_conn_id='postgres')
     postgres_hook.run(create_table_query)
 
 # Function to insert data from CSV into the table
@@ -37,7 +37,7 @@ def insert_data_from_csv(**kwargs):
     insert_data_query = f"INSERT INTO my_table VALUES %s"
     data = [tuple(row) for row in df.to_numpy()]
 
-    postgres_hook = PostgresHook(postgres_conn_id='your_postgres_connection')
+    postgres_hook = PostgresHook(postgres_conn_id='postgres')
     connection = postgres_hook.get_conn()
     cursor = connection.cursor()
 
