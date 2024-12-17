@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.providers.google.cloud.operators.gcs import GCSToLocalOperator
+from airflow.providers.google.cloud.operators.gcs import GoogleCloudStorageToLocalOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.dates import days_ago
 from datetime import timedelta
@@ -31,8 +31,8 @@ with DAG(
 ) as dag:
 
     # Define the bucket name and prefix (optional)
-    bucket_name = 'your-bucket-name'
-    prefix = 'path/to/files/'  # Modify to your prefix or leave empty
+    bucket_name = 'nth-20241216-0922'
+    prefix = '/people-100.csv'  # Modify to your prefix or leave empty
 
     # Get a list of files in the GCS bucket dynamically
     files = get_gcs_files(bucket_name, prefix)
@@ -40,11 +40,11 @@ with DAG(
     # Create tasks dynamically for each file
     download_tasks = []
     for file in files:
-        task = GCSToLocalOperator(
+        task = GoogleCloudStorageToLocalOperator(
             task_id=f'download_{os.path.basename(file)}',
             bucket_name=bucket_name,
             object_name=file,
-            local_file=f'/path/to/local/directory/{os.path.basename(file)}',  # Local path to save the file
+            local_file=f'/tmp/{os.path.basename(file)}',  # Local path to save the file
         )
         download_tasks.append(task)
 
