@@ -102,8 +102,7 @@ download_csv_task = GCSToLocalFilesystemOperator(
     bucket="{{ params.gcs_bucket }}",  # Dynamically read bucket name
     object_name="{{ params.csv_object_name }}",  # Dynamically read object name
     filename="{{ params.local_csv_path }}",  # Dynamically set local path
-    dag=dag,
-    gcp_conn_id = "google_cloud_default"
+    dag=dag
 )
 
 # Task to create table
