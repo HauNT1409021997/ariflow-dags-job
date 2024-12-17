@@ -27,5 +27,5 @@ with DAG(
     download_task = PythonOperator(
         task_id='download_gcs_file',
         python_callable=download_file_from_gcs,
-        op_args=['nth-20241216-0922', '/people-100.csv', '/temp/people-100.csv'],
+        op_args=['your-bucket-name', 'path/to/file', '/path/to/local/file'],
     )
