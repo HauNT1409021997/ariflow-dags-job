@@ -1,126 +1,31 @@
-import logging
-from datetime import datetime
-import pandas as pd
 from airflow import DAG
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.google.cloud.transfers.gcs_to_local import GCSToLocalFilesystemOperator
-from airflow.hooks.postgres_hook import PostgresHook
-import psycopg2.extras
+from airflow.utils.dates import days_ago
+from datetime import timedelta
 
-# Configure logging
-logger = logging.getLogger("airflow")
-logger.setLevel(logging.INFO)
+def download_file_from_gcs(bucket_name, object_name, local_path):
+    hook = GCSHook()
+    hook.download(bucket_name, object_name, local_path)
 
-# Default arguments for the DAG
 default_args = {
     'owner': 'airflow',
-    'start_date': datetime(2024, 12, 16),
     'retries': 1,
+    'retry_delay': timedelta(minutes=5),
 }
 
-# Define the DAG with parameters
-dag = DAG(
-    'dynamic_csv_to_dynamic_table_with_logs',
+with DAG(
+    'gcs_dynamic_file_retriever',
     default_args=default_args,
-    schedule_interval=None,  # Only triggered manually
-    params={  # Default values for parameters
-        "gcs_bucket": "default-bucket-name",
-        "csv_object_name": "default-file.csv",
-        "table_name": "default_table",  # Dynamic table name
-    },
-)
+    description='A dynamic DAG to get files from GCS',
+    schedule_interval=None,
+    start_date=days_ago(1),
+    catchup=False,
+) as dag:
 
-# Function to create table based on CSV columns
-def create_table_from_csv(**kwargs):
-    try:
-        local_csv_path = kwargs['params']['local_csv_path']
-        table_name = kwargs['params']['table_name']
-        logger.info(f"Starting table creation. Table name: {table_name}, CSV path: {local_csv_path}")
-
-        df = pd.read_csv(local_csv_path)
-        logger.info(f"CSV columns: {list(df.columns)}")
-
-        columns = ", ".join([f"{col} TEXT" for col in df.columns])
-        create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns});"
-        logger.info(f"Create Table Query: {create_table_query}")
-
-        postgres_hook = PostgresHook(postgres_conn_id='postgres')
-        postgres_hook.run(create_table_query)
-        logger.info(f"Table {table_name} created successfully.")
-    except Exception as e:
-        logger.error(f"Failed to create table: {str(e)}")
-        raise
-
-# Function to insert data from CSV into the table
-def insert_data_from_csv(**kwargs):
-    try:
-        local_csv_path = kwargs['params']['local_csv_path']
-        table_name = kwargs['params']['table_name']
-        logger.info(f"Starting data insertion. Table name: {table_name}, CSV path: {local_csv_path}")
-
-        df = pd.read_csv(local_csv_path)
-        logger.info(f"CSV contains {len(df)} rows.")
-
-        insert_data_query = f"INSERT INTO {table_name} VALUES %s"
-        data = [tuple(row) for row in df.to_numpy()]
-        logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
-
-        postgres_hook = PostgresHook(postgres_conn_id='postgres')
-        connection = postgres_hook.get_conn()
-        cursor = connection.cursor()
-
-        psycopg2.extras.execute_values(cursor, insert_data_query, data)
-        connection.commit()
-        logger.info(f"Data inserted into table {table_name} successfully.")
-    except Exception as e:
-        logger.error(f"Failed to insert data into table {table_name}: {str(e)}")
-        raise
-
-# Dynamic paths and parameters
-def set_dynamic_paths(**kwargs):
-    try:
-        bucket = kwargs['params']['gcs_bucket']
-        object_name = kwargs['params']['csv_object_name']
-        local_csv_path = f"/tmp/{object_name.split('/')[-1]}"
-        kwargs['params']['local_csv_path'] = local_csv_path
-        logger.info(f"Dynamic paths set. GCS bucket: {bucket}, Object name: {object_name}, Local path: {local_csv_path}")
-    except Exception as e:
-        logger.error(f"Failed to set dynamic paths: {str(e)}")
-        raise
-
-# Task to set up paths dynamically
-set_paths_task = PythonOperator(
-    task_id='set_paths',
-    python_callable=set_dynamic_paths,
-    provide_context=True,
-    dag=dag,
-)
-
-# Task to download CSV file from GCP
-download_csv_task = GCSToLocalFilesystemOperator(
-    task_id='download_csv_file',
-    bucket="{{ params.gcs_bucket }}",  # Dynamically read bucket name
-    object_name="{{ params.csv_object_name }}",  # Dynamically read object name
-    filename="{{ params.local_csv_path }}",  # Dynamically set local path
-    dag=dag,
-    gcp_conn_id = "google_cloud_default"
-)
-
-# Task to create table
-create_table_task = PythonOperator(
-    task_id='create_table',
-    python_callable=create_table_from_csv,
-    provide_context=True,
-    dag=dag,
-)
-
-# Task to insert data
-insert_data_task = PythonOperator(
-    task_id='insert_data',
-    python_callable=insert_data_from_csv,
-    provide_context=True,
-    dag=dag,
-)
-
-# Task sequence
-set_paths_task >> download_csv_task >> create_table_task >> insert_data_task
+    # Example task using PythonOperator to download the file from GCS
+    download_task = PythonOperator(
+        task_id='download_gcs_file',
+        python_callable=download_file_from_gcs,
+        op_args=['nth-20241216-0922', '/people-100.csv', '/temp/people-100.csv'],
+    )
