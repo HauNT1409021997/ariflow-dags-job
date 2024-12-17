@@ -7,8 +7,6 @@ from airflow.providers.google.cloud.transfers.gcs_to_local import GCSToLocalFile
 from airflow.hooks.postgres_hook import PostgresHook
 import psycopg2.extras
 
-pip install apache-airflow[google]
-
 # Configure logging
 logger = logging.getLogger("airflow")
 logger.setLevel(logging.INFO)
