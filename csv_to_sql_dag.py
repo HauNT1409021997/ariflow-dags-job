@@ -122,5 +122,5 @@ insert_data_task = PythonOperator(
     dag=dag,
 )
 
-# Task sequence
+# Task sequence: Ensure that dynamic paths are set before downloading CSV, creating table, and inserting data
 set_paths_task >> download_csv_task >> create_table_task >> insert_data_task
