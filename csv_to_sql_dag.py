@@ -99,14 +99,12 @@ set_paths_task = PythonOperator(
 # Task to download CSV file from GCP
 download_csv_task = GCSToLocalFilesystemOperator(
     task_id='download_csv_file',
-    bucket="{{ params.gcs_bucket }}",
-    object_name="{{ params.csv_object_name }}",
-    filename="{{ task_instance.xcom_pull(task_ids='set_paths', key='local_csv_path') }}",
-    google_cloud_storage_conn_id='google_cloud_default',  # Ensure this points to the correct connection
-    dag=dag
+    bucket="{{ params.gcs_bucket }}",  # Dynamically read bucket name
+    object_name="{{ params.csv_object_name }}",  # Dynamically read object name
+    filename="{{ task_instance.xcom_pull(task_ids='set_paths', key='local_csv_path') }}",  # Pull from XCom
+    dag=dag,
+    gcp_conn_id="google_cloud_default"
 )
-
-
 
 # Task to create table
 create_table_task = PythonOperator(
