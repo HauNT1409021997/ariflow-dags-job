@@ -66,7 +66,7 @@ def insert_data_from_csv(**kwargs):
         data = [tuple(row) for row in df.to_numpy()]
         logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
 
-        postgres_hook = PostgresHook(postgres_conn_id='postgres')
+        postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
         connection = postgres_hook.get_conn()
         cursor = connection.cursor()
 
