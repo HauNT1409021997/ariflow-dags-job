@@ -27,6 +27,10 @@ dag = DAG(
         "gcs_bucket": "default-bucket-name",
         "csv_object_name": "default-file.csv",
         "table_name": "default_table",  # Dynamic table name
+        "postgres_host": "localhost",  # PostgreSQL host
+        "postgres_user": "your_username",  # PostgreSQL username
+        "postgres_password": "your_password",  # PostgreSQL password
+        "postgres_schema": "public",  # PostgreSQL schema
     },
 )
 
@@ -35,13 +39,18 @@ def create_table_from_csv(**kwargs):
     try:
         local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')  # Pull from XCom
         table_name = kwargs['params']['table_name']
+        postgres_user = kwargs['params']['postgres_user']
+        postgres_password = kwargs['params']['postgres_password']
+        postgres_host = kwargs['params']['postgres_host']
+        postgres_schema = kwargs['params']['postgres_schema']
+        
         logger.info(f"Starting table creation. Table name: {table_name}, CSV path: {local_csv_path}")
 
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV columns: {list(df.columns)}")
 
         columns = ", ".join([f"{col} TEXT" for col in df.columns])
-        create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns});"
+        create_table_query = f"CREATE TABLE IF NOT EXISTS {postgres_schema}.{table_name} ({columns});"
         logger.info(f"Create Table Query: {create_table_query}")
 
         postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
@@ -55,14 +64,19 @@ def create_table_from_csv(**kwargs):
 # Function to insert data from CSV into the table
 def insert_data_from_csv(**kwargs):
     try:
-        local_csv_path = kwargs['params']['local_csv_path']
+        local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')
         table_name = kwargs['params']['table_name']
+        postgres_user = kwargs['params']['postgres_user']
+        postgres_password = kwargs['params']['postgres_password']
+        postgres_host = kwargs['params']['postgres_host']
+        postgres_schema = kwargs['params']['postgres_schema']
+        
         logger.info(f"Starting data insertion. Table name: {table_name}, CSV path: {local_csv_path}")
 
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV contains {len(df)} rows.")
 
-        insert_data_query = f"INSERT INTO {table_name} VALUES %s"
+        insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} VALUES %s"
         data = [tuple(row) for row in df.to_numpy()]
         logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
 
