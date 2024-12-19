@@ -33,7 +33,7 @@ dag = DAG(
 # Function to create table based on CSV columns
 def create_table_from_csv(**kwargs):
     try:
-        local_csv_path = kwargs['params']['local_csv_path']
+        local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')  # Pull from XCom
         table_name = kwargs['params']['table_name']
         logger.info(f"Starting table creation. Table name: {table_name}, CSV path: {local_csv_path}")
 
@@ -50,6 +50,7 @@ def create_table_from_csv(**kwargs):
     except Exception as e:
         logger.error(f"Failed to create table: {str(e)}")
         raise
+
 
 # Function to insert data from CSV into the table
 def insert_data_from_csv(**kwargs):
@@ -82,11 +83,12 @@ def set_dynamic_paths(**kwargs):
         bucket = kwargs['params']['gcs_bucket']
         object_name = kwargs['params']['csv_object_name']
         local_csv_path = f"/tmp/{object_name.split('/')[-1]}"
-        kwargs['params']['local_csv_path'] = local_csv_path
+        kwargs['ti'].xcom_push(key='local_csv_path', value=local_csv_path)  # Explicit XCom push
         logger.info(f"Dynamic paths set. GCS bucket: {bucket}, Object name: {object_name}, Local path: {local_csv_path}")
     except Exception as e:
         logger.error(f"Failed to set dynamic paths: {str(e)}")
         raise
+
 
 # Task to set up paths dynamically
 set_paths_task = PythonOperator(
@@ -105,6 +107,7 @@ download_csv_task = GCSToLocalFilesystemOperator(
     dag=dag,
     gcp_conn_id="google_cloud_default"
 )
+
 
 # Task to create table
 create_table_task = PythonOperator(
