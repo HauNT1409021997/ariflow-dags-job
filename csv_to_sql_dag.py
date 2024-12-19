@@ -44,7 +44,7 @@ def create_table_from_csv(**kwargs):
         create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns});"
         logger.info(f"Create Table Query: {create_table_query}")
 
-        postgres_hook = PostgresHook(postgres_conn_id='postgres')
+        postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
         postgres_hook.run(create_table_query)
         logger.info(f"Table {table_name} created successfully.")
     except Exception as e:
