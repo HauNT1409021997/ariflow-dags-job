@@ -37,11 +37,8 @@ dag = DAG(
 # Function to create table based on CSV columns
 def create_table_from_csv(**kwargs):
     try:
-        local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')  # Pull from XCom
+        local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')
         table_name = kwargs['params']['table_name']
-        postgres_user = kwargs['params']['postgres_user']
-        postgres_password = kwargs['params']['postgres_password']
-        postgres_host = kwargs['params']['postgres_host']
         postgres_schema = kwargs['params']['postgres_schema']
         
         logger.info(f"Starting table creation. Table name: {table_name}, CSV path: {local_csv_path}")
@@ -49,14 +46,17 @@ def create_table_from_csv(**kwargs):
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV columns: {list(df.columns)}")
 
-        # Quote column names with double quotes to handle spaces and special characters
         columns = ", ".join([f'"{col}" TEXT' for col in df.columns])
+
+        # Create schema if it doesn't exist
+        create_schema_query = f'CREATE SCHEMA IF NOT EXISTS "{postgres_schema}";'
         create_table_query = f'CREATE TABLE IF NOT EXISTS "{postgres_schema}"."{table_name}" ({columns});'
-        logger.info(f"Create Table Query: {create_table_query}")
 
         postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
-        postgres_hook.run(create_table_query)
-        logger.info(f"Table {table_name} created successfully.")
+        postgres_hook.run(create_schema_query)  # Ensure schema exists
+        postgres_hook.run(create_table_query)  # Create the table
+
+        logger.info(f"Table {table_name} created successfully in schema {postgres_schema}.")
     except Exception as e:
         logger.error(f"Failed to create table: {str(e)}")
         raise
