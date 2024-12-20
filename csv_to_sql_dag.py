@@ -30,7 +30,7 @@ dag = DAG(
         "postgres_host": "my-postgresql.data-process.svc.cluster.local",  # PostgreSQL host
         "postgres_user": "testuser",  # PostgreSQL username
         "postgres_password": "testpass",  # PostgreSQL password
-        "postgres_schema": "testdb",  # PostgreSQL schema
+        "postgres_schema": "primary",  # PostgreSQL schema
     },
 )
 
@@ -51,7 +51,7 @@ def create_table_from_csv(**kwargs):
 
         # Quote column names with double quotes to handle spaces and special characters
         columns = ", ".join([f'"{col}" TEXT' for col in df.columns])
-        create_table_query = f"CREATE TABLE IF NOT EXISTS {postgres_schema}.{table_name} ({columns});"
+        create_table_query = f'CREATE TABLE IF NOT EXISTS "{postgres_schema}"."{table_name}" ({columns});'
         logger.info(f"Create Table Query: {create_table_query}")
 
         postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
