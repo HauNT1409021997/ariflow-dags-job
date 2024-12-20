@@ -30,7 +30,7 @@ dag = DAG(
         "postgres_host": "my-postgresql.data-process.svc.cluster.local",  # PostgreSQL host
         "postgres_user": "testuser",  # PostgreSQL username
         "postgres_password": "testpass",  # PostgreSQL password
-        "postgres_schema": "postgres",  # PostgreSQL schema
+        "postgres_schema": "testdb",  # PostgreSQL schema
     },
 )
 
@@ -49,7 +49,8 @@ def create_table_from_csv(**kwargs):
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV columns: {list(df.columns)}")
 
-        columns = ", ".join([f"{col} TEXT" for col in df.columns])
+        # Quote column names with double quotes to handle spaces and special characters
+        columns = ", ".join([f'"{col}" TEXT' for col in df.columns])
         create_table_query = f"CREATE TABLE IF NOT EXISTS {postgres_schema}.{table_name} ({columns});"
         logger.info(f"Create Table Query: {create_table_query}")
 
@@ -59,6 +60,7 @@ def create_table_from_csv(**kwargs):
     except Exception as e:
         logger.error(f"Failed to create table: {str(e)}")
         raise
+
 
 
 # Function to insert data from CSV into the table
