@@ -3,6 +3,7 @@ $webserverCmd = "airflow webserver"
 $schedulerCmd = "airflow scheduler"
 
 # Start the Airflow webserver in the background
+#
 Start-Job -ScriptBlock {
     airflow webserver
 } | Out-Null
