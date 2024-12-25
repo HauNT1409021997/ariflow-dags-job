@@ -24,13 +24,13 @@ dag = DAG(
     default_args=default_args,
     schedule_interval=None,  # Only triggered manually
     params={  # Default values for parameters
-        "gcs_bucket": "nth-20241216-0922",
+        "gcs_bucket": "nth-20241225-0138",
         "csv_object_name": "people-100.csv",
         "table_name": "t_people_info",  # Dynamic table name
-        "postgres_host": "my-postgresql.data-process.svc.cluster.local",  # PostgreSQL host
+        "postgres_host": "data-storage-postgresql.data-storage.svc.cluster.local",  # PostgreSQL host
         "postgres_user": "testuser",  # PostgreSQL username
         "postgres_password": "testpass",  # PostgreSQL password
-        "postgres_schema": "primary",  # PostgreSQL schema
+        "postgres_schema": "testdb",  # PostgreSQL schema
     },
 )
 
