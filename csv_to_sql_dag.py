@@ -40,28 +40,35 @@ def create_table_from_csv(**kwargs):
         local_csv_path = kwargs['ti'].xcom_pull(task_ids='set_paths', key='local_csv_path')
         table_name = kwargs['params']['table_name']
         postgres_schema = kwargs['params']['postgres_schema']
-        
+
         logger.info(f"Starting table creation. Table name: {table_name}, CSV path: {local_csv_path}")
 
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV columns: {list(df.columns)}")
 
+        # Define the columns for table creation
         columns = ", ".join([f'"{col}" TEXT' for col in df.columns])
 
         # Create schema if it doesn't exist
         create_schema_query = f'CREATE SCHEMA IF NOT EXISTS "{postgres_schema}";'
+
+        # Drop the table if it exists
+        drop_table_query = f'DROP TABLE IF EXISTS "{postgres_schema}"."{table_name}";'
+
+        # Create the table
         create_table_query = f'CREATE TABLE IF NOT EXISTS "{postgres_schema}"."{table_name}" ({columns});'
 
         postgres_hook = PostgresHook(postgres_conn_id='my_postgres_connection')
         postgres_hook.run(create_schema_query)  # Ensure schema exists
+
+        # Drop and recreate the table
+        postgres_hook.run(drop_table_query)  # Drop table if it exists
         postgres_hook.run(create_table_query)  # Create the table
 
-        logger.info(f"Table {table_name} created successfully in schema {postgres_schema}.")
+        logger.info(f"Table {table_name} dropped and recreated successfully in schema {postgres_schema}.")
     except Exception as e:
         logger.error(f"Failed to create table: {str(e)}")
         raise
-
-
 
 # Function to insert data from CSV into the table
 def insert_data_from_csv(**kwargs):
