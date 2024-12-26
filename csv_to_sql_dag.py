@@ -34,6 +34,12 @@ dag = DAG(
     },
 )
 
+# Utility function to convert column names to snake_case
+def to_snake_case(name):
+    import re
+    name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    return name
+
 # Function to create table based on CSV columns
 def create_table_from_csv(**kwargs):
     try:
@@ -45,6 +51,10 @@ def create_table_from_csv(**kwargs):
 
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV columns: {list(df.columns)}")
+
+        # Convert columns to snake_case
+        df.columns = [to_snake_case(col) for col in df.columns]
+        logger.info(f"Converted columns to snake_case: {list(df.columns)}")
 
         # Define the columns for table creation
         columns = ", ".join([f'"{col}" TEXT' for col in df.columns])
@@ -85,11 +95,15 @@ def insert_data_from_csv(**kwargs):
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV contains {len(df)} rows.")
 
+        # Convert columns to snake_case
+        df.columns = [to_snake_case(col) for col in df.columns]
+        logger.info(f"Converted columns to snake_case: {list(df.columns)}")
+
         # Replace NaN values with None for SQL compatibility
         df = df.where(pd.notnull(df), None)
 
         # Insert data query with explicit column names
-        insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} ({', '.join(df.columns)}) VALUES %s"
+        insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} ({', '.join([f'\"{col}\"' for col in df.columns])}) VALUES %s"
 
         data = [tuple(row) for row in df.to_numpy()]
         logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
