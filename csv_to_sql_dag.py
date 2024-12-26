@@ -72,13 +72,18 @@ def insert_data_from_csv(**kwargs):
         postgres_password = kwargs['params']['postgres_password']
         postgres_host = kwargs['params']['postgres_host']
         postgres_schema = kwargs['params']['postgres_schema']
-        
+
         logger.info(f"Starting data insertion. Table name: {table_name}, CSV path: {local_csv_path}")
 
         df = pd.read_csv(local_csv_path)
         logger.info(f"CSV contains {len(df)} rows.")
 
-        insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} VALUES %s"
+        # Replace NaN values with None for SQL compatibility
+        df = df.where(pd.notnull(df), None)
+
+        # Insert data query with explicit column names
+        insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} ({', '.join(df.columns)}) VALUES %s"
+
         data = [tuple(row) for row in df.to_numpy()]
         logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
 
