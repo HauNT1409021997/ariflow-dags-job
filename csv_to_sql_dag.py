@@ -38,6 +38,7 @@ dag = DAG(
 def to_snake_case(name):
     import re
     name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    name = re.sub(r'[^a-z0-9_]', '', name)  # Remove invalid characters
     return name
 
 # Function to create table based on CSV columns
@@ -104,6 +105,7 @@ def insert_data_from_csv(**kwargs):
 
         # Insert data query with explicit column names
         insert_data_query = f"INSERT INTO {postgres_schema}.{table_name} ({', '.join([f'\"{col}\"' for col in df.columns])}) VALUES %s"
+        logger.info(f"Insert data query: {insert_data_query}")
 
         data = [tuple(row) for row in df.to_numpy()]
         logger.info(f"Data to insert: {data[:5]}... (showing first 5 rows)")
